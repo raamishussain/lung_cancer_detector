@@ -2,7 +2,7 @@
 
 This repository contains a YOLOv5 model trained to detect lung cancer in MRI images.
 The dataset used for training and validation comes from the Cancer Imaging Archive:
-`https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=70224216`.
+[Lung Cancer Dataset](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=70224216)
 
 Some python code for visualization and data preparation can also be found at the above link.
 
@@ -21,7 +21,7 @@ This notebook will create a train/test split by patient, and then sample random 
 ## Model Training
 
 To run reproduce the model in this repo, you must clone the YOLOv5 repository:
-`https://github.com/ultralytics/yolov5`.
+[YOLOv5 Repo](https://github.com/ultralytics/yolov5)
 
 Install the necessary requirements.
 
