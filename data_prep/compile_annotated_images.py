@@ -1,4 +1,4 @@
-import argparse, os, cv2, PIL
+import argparse, os, PIL
 import pydicom as pdm
 import numpy as np
 import xml.etree.ElementTree as ET
@@ -71,10 +71,15 @@ def convert_dcm_2_png(dicom_path,save_path):
     """
 
     ds = pdm.dcmread(dicom_path)
-    pixel_array = ds.pixel_array
-    pixel_array = (pixel_array - pixel_array.min()) / (pixel_array.max() - pixel_array.min()) * 255.0 
+    pixel_array = ds.pixel_array.astype(np.float32)
 
-    cv2.imwrite(save_path,pixel_array)
+    # Normalize to 0–255
+    pixel_array = (pixel_array - pixel_array.min()) / (pixel_array.max() - pixel_array.min()) * 255.0
+    pixel_array = pixel_array.astype(np.uint8)
+
+    # Convert to PIL image
+    image = PIL.Image.fromarray(pixel_array)
+    image.save(save_path)
 
 
 def xml_to_yolo_bbox(bbox, w, h):
