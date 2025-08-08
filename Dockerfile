@@ -5,15 +5,22 @@ WORKDIR /app
 # Install system dependencies if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libgl \
+    libgl1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# install python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install uv
 
-COPY lung_cancer_detector/ ./lung_cancer_detector/
+# create virtual env
+RUN python -m venv /app/.venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
-ENV PYTHONPATH=/app/lung_cancer_detector
+COPY pyproject.toml uv.lock ./
 
-CMD ["python", "lung_cancer_detector/app/app.py"]
+# install dependencies with uv
+RUN uv sync --python=/app/.venv/bin/python --frozen --no-dev --no-install-project
+
+COPY . .
+
+CMD ["python", "-m", "app.app"]
