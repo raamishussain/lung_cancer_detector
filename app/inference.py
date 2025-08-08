@@ -5,13 +5,16 @@ from app.config import REMOTE_WEIGHT_PATH
 from PIL import Image
 
 
-# Load model once from hub
-MODEL = torch.hub.load(
-    "app/yolov5", "custom", path=REMOTE_WEIGHT_PATH, source="local"
-)
+def load_model():
+    model = torch.hub.load(
+        "ultralytics/yolov5",
+        "custom",
+        path=REMOTE_WEIGHT_PATH,
+    )
+    return model
 
 
-def run_inference(image_bytes: bytes) -> Image:
+def run_inference(image_bytes: bytes, model: torch.nn.Module) -> Image:
     """Run object detection on an image
 
     Args:
@@ -24,7 +27,7 @@ def run_inference(image_bytes: bytes) -> Image:
     """
 
     image = Image.open(io.BytesIO(image_bytes))
-    results = MODEL(image)
+    results = model(image)
 
     # annotate images with bounding boxes
     annotated = results.render()[0]
