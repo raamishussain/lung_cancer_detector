@@ -1,7 +1,7 @@
 import gradio as gr
 import logging
 
-from app.config import REMOTE_WEIGHT_PATH, VOLUME_NAME
+from app.config import VOLUME_NAME
 from app.inference import run_inference
 from modal import (
     App,
@@ -22,7 +22,7 @@ model_volume = Volume.persisted(VOLUME_NAME)
 
 image = Image.from_dockerfile(
     "Dockerfile",
-    context_mount=mount(".", "/app").mount(model_volume, REMOTE_WEIGHT_PATH),
+    context_mount=mount(".", "/app").mount(model_volume, "/model"),
 )
 
 
