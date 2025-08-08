@@ -1,13 +1,16 @@
 [project]
 name = "lung-cancer-detector"
 version = "0.1.0"
-description = "Detect lung cancer in CT and PET/CT images"
+description = "Lung Cancer Detector: Detecting tumors in chest CT/PET scans"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "gradio",
     "modal",
-    "numpy",
+    "numpy==1.26.4",
     "Pillow",
-    "pydicom",  
     "torch==2.2.2",
+    "seaborn",
+    "pydicom",
+    "ultralytics",
 ]
