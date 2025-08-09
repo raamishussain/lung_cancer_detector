@@ -1,16 +1,12 @@
-import gradio as gr
 import logging
-import PIL
 
 from app.config import VOLUME_NAME
-from app.inference import load_model, run_inference
 from modal import (
     App,
     asgi_app,
     Image,
     Volume,
 )
-from typing import Optional
 
 
 # Set up logging
@@ -22,25 +18,34 @@ model_volume = Volume.from_name(VOLUME_NAME)
 app = App("lung_cancer_detector", image=image)
 
 
-def toggle_submit(img):
-    """Returns False if img is None. This disables submit button"""
-    return img is not None
+@app.function(image=image, volumes={"/model": model_volume}, max_containers=1)
+@asgi_app()
+def web():
+    """Build the Gradio front end UI"""
+    import gradio as gr
+    import PIL
+    from app.inference import load_model, run_inference
+    from fastapi import FastAPI
+    from gradio.routes import mount_gradio_app
+    from typing import Optional
 
 
-def predict(img: Optional[PIL.Image.Image]) -> Optional[PIL.Image.Image]:
-    if img is None:
-        logger.warning("No Image provided")
-        return None
-
-    model = load_model()
-    logger.info("Loaded YOLO model, running inference...")
-    try:
-        return run_inference(img, model)
-    except Exception as e:
-        logger.error(f"Exception: {e}")
+    def toggle_submit(img):
+        """Returns False if img is None. This disables submit button"""
+        return img is not None
 
 
-def build_ui():
+    def predict(img: Optional[PIL.Image.Image]) -> Optional[PIL.Image.Image]:
+        if img is None:
+            logger.warning("No Image provided")
+            return None
+
+        model = load_model()
+        logger.info("Loaded YOLO model, running inference...")
+        try:
+            return run_inference(img, model)
+        except Exception as e:
+            logger.error(f"Exception: {e}")
 
     with gr.Blocks(title="Lung Cancer Detector", fill_width=True) as ui:
 
@@ -77,14 +82,16 @@ def build_ui():
             outputs=[output_img],
         )
 
-    return ui
+    ui.queue(max_size=5)
 
+    fastapi_app = FastAPI()
 
-@app.function(image=image, volumes={"/model": model_volume})
-@asgi_app()
-def web():
-    """Build the Gradio front end UI"""
+    mounted_app = mount_gradio_app(app=FastAPI(), blocks=ui, path="/")
 
-    ui = build_ui()
+    for route in fastapi_app.routes:
+        try:
+            logger.info(f"Route: {route.path} -> {route.name}")
+        except AttributeError:
+            pass
 
-    ui.launch(inbrowser=True)
+    return mounted_app

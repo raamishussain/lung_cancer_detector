@@ -23,5 +23,3 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --python=/app/.venv/bin/python --frozen --no-dev --no-install-project
 
 COPY . .
-
-CMD ["python", "-m", "app.app"]
