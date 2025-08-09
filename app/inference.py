@@ -1,8 +1,12 @@
-import io
+import logging
 import torch
+import PIL
 
 from app.config import REMOTE_WEIGHT_PATH
-from PIL import Image
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def load_model():
@@ -14,21 +18,21 @@ def load_model():
     return model
 
 
-def run_inference(image_bytes: bytes, model: torch.nn.Module) -> Image:
+def run_inference(
+    image: PIL.Image.Image, model: torch.nn.Module
+) -> PIL.Image.Image:
     """Run object detection on an image
 
     Args:
-        image_bytes: bytes
+        image: PIL.Image.Image
             Image bytes of chest CT/PET-CT scan
 
     Returns:
-        Image:
+        PIL.Image.Image:
             Image with bounding box predictions
     """
-
-    image = Image.open(io.BytesIO(image_bytes))
     results = model(image)
 
     # annotate images with bounding boxes
     annotated = results.render()[0]
-    return Image.fromarray(annotated)
+    return PIL.Image.fromarray(annotated)
