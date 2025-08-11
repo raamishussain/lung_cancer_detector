@@ -1,97 +1,70 @@
+import io
 import logging
+import modal
+import torch
 
-from app.config import VOLUME_NAME
-from modal import (
-    App,
-    asgi_app,
-    Image,
-    Volume,
-)
+from app.config import REMOTE_WEIGHT_PATH, VOLUME_NAME
+from app.inference import run_inference
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import Response
+from PIL import Image
 
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-image = Image.from_dockerfile("Dockerfile")
-model_volume = Volume.from_name(VOLUME_NAME)
-app = App("lung_cancer_detector", image=image)
+image = modal.Image.from_dockerfile("Dockerfile")
+model_volume = modal.Volume.from_name(VOLUME_NAME)
+app = modal.App("lung_cancer_detector")
+
+def load_model():
+    """Load YOLOv5 model with trained model weights"""
+    model = torch.hub.load(
+        "ultralytics/yolov5", "custom", path=REMOTE_WEIGHT_PATH
+    )
+    return model
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan will load model on app startup"""
+    logger.info("Loading YOLOv5 model weights...")
+    app.state.model = load_model()
+    logger.info("Model loaded successfully")
+    yield
 
 
 @app.function(image=image, volumes={"/model": model_volume}, max_containers=1)
-@asgi_app()
-def web():
-    """Build the Gradio front end UI"""
-    import gradio as gr
-    import PIL
-    from app.inference import load_model, run_inference
-    from fastapi import FastAPI
-    from gradio.routes import mount_gradio_app
-    from typing import Optional
+@modal.asgi_app()
+def fastapi_app():
+    """Create FastAPI application with a /predict endpoint to run
+    inference on images"""
 
+    fastapi_app = FastAPI(lifespan=lifespan)
 
-    def toggle_submit(img):
-        """Returns False if img is None. This disables submit button"""
-        return img is not None
+    @fastapi_app.post("/predict")
+    async def predict(file: UploadFile = File(...)) -> Response:
+        model = fastapi_app.state.model
+        
+        logger.info("Running inference on image...")
+        img = Image.open(io.BytesIO(await file.read()))
 
-
-    def predict(img: Optional[PIL.Image.Image]) -> Optional[PIL.Image.Image]:
-        if img is None:
-            logger.warning("No Image provided")
-            return None
-
-        model = load_model()
-        logger.info("Loaded YOLO model, running inference...")
         try:
-            return run_inference(img, model)
+            annotated_img = run_inference(img, model)
+            logger.info("Successfully ran YOLO model")
+
+            buff = io.BytesIO()
+            annotated_img.save(buff, format="PNG")
+            buff.seek(0)
+
+            return Response(content=buff.read(), media_type="image/png")
         except Exception as e:
-            logger.error(f"Exception: {e}")
+            logger.error(f"Encountered exception when running inference: {e}")
+            return HTTPException(
+                status_code=400,
+                detail=f"Encountered exception when running inference {e}"
+            )
 
-    with gr.Blocks(title="Lung Cancer Detector", fill_width=True) as ui:
-
-        gr.Markdown(
-            """
-            # Lung Cancer Detector
-
-            Upload a chest PET/CT scan to detect tumors
-            """
-        )
-
-        with gr.Row():
-            with gr.Column():
-                input_img = gr.Image(
-                    type="pil",
-                    label="Upload Scan",
-                    interactive=True,
-                )
-                submit = gr.Button("Analyze", interactive=True)
-
-            with gr.Column():
-                output_img = gr.Image(
-                    type="pil",
-                    label="Scan with Detected Tumors",
-                    interactive=False,
-                )
-
-        input_img.change(
-            fn=toggle_submit, inputs=[input_img], outputs=[submit]
-        )
-        submit.click(
-            fn=predict,
-            inputs=[input_img],
-            outputs=[output_img],
-        )
-
-    ui.queue(max_size=5)
-
-    fastapi_app = FastAPI()
-
-    mounted_app = mount_gradio_app(app=FastAPI(), blocks=ui, path="/")
-
-    for route in fastapi_app.routes:
-        try:
-            logger.info(f"Route: {route.path} -> {route.name}")
-        except AttributeError:
-            pass
-
-    return mounted_app
+    return fastapi_app

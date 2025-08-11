@@ -5,7 +5,7 @@ description = "Lung Cancer Detector: Detecting tumors in chest CT/PET scans"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "gradio",
+    "fastapi",
     "modal",
     "numpy==1.26.4",
     "Pillow",
@@ -14,4 +14,5 @@ dependencies = [
     "setuptools<80.9", # pin to avoid pkg_resources deprecation
     "pydicom",
     "ultralytics",
+    "uvicorn"
 ]

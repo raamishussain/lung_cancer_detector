@@ -1,8 +1,8 @@
 import logging
 import torch
-import PIL
 
 from app.config import REMOTE_WEIGHT_PATH
+from PIL import Image
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -19,8 +19,8 @@ def load_model():
 
 
 def run_inference(
-    image: PIL.Image.Image, model: torch.nn.Module
-) -> PIL.Image.Image:
+    image: Image, model: torch.nn.Module
+) -> Image:
     """Run object detection on an image
 
     Args:
@@ -35,4 +35,4 @@ def run_inference(
 
     # annotate images with bounding boxes
     annotated = results.render()[0]
-    return PIL.Image.fromarray(annotated)
+    return Image.fromarray(annotated)
