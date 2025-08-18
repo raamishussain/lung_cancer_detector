@@ -4,3 +4,5 @@ data/*
 .DS_store
 
 __pycache__
+
+.env

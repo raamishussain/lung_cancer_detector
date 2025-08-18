@@ -1,10 +1,11 @@
 import io
 import logging
 import modal
+import os
 import torch
 
 from app import __version__
-from app.config import API_KEY, DESCRIPTION, REMOTE_WEIGHT_PATH, VOLUME_NAME
+from app.config import DESCRIPTION, REMOTE_WEIGHT_PATH, VOLUME_NAME
 from app.inference import run_inference
 from contextlib import asynccontextmanager
 from fastapi import (
@@ -25,10 +26,27 @@ from starlette import status
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 # Load model with trained model weights
 image = modal.Image.from_dockerfile("Dockerfile")
 model_volume = modal.Volume.from_name(VOLUME_NAME)
+API_KEY = modal.Secret.from_name("lung_cancer_api_key")
 app = modal.App("lung_cancer_detector")
+
+
+# set up security
+api_key_query = APIKeyQuery(name="api-key", auto_error=False)
+
+
+async def get_api_key(api_key_query: str = Security(api_key_query)):
+    API_KEY = os.environ.get("LUNG_CANCER_API_KEY")
+    if api_key_query == API_KEY:
+        return api_key_query
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
 
 
 def load_model():
@@ -37,20 +55,6 @@ def load_model():
         "ultralytics/yolov5", "custom", path=REMOTE_WEIGHT_PATH
     )
     return model
-
-
-# set up security
-api_key_query = APIKeyQuery(name="api-key", auto_error=False)
-
-
-async def get_api_key(api_key_query: str = Security(api_key_query)):
-    if api_key_query == API_KEY:
-        return api_key_query
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        )
 
 
 # lifespan will load model on app startup once instead of per request
@@ -63,7 +67,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
-@app.function(image=image, volumes={"/model": model_volume}, max_containers=1)
+@app.function(
+    image=image,
+    volumes={"/model": model_volume},
+    secrets=[API_KEY],
+    max_containers=1,
+)
 @modal.asgi_app()
 def fastapi_app():
     """Create FastAPI application with a /predict endpoint to run
