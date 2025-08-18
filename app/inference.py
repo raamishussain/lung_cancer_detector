@@ -18,9 +18,7 @@ def load_model():
     return model
 
 
-def run_inference(
-    image: Image, model: torch.nn.Module
-) -> Image:
+def run_inference(image: Image, model: torch.nn.Module) -> Image:
     """Run object detection on an image
 
     Args:
