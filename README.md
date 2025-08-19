@@ -8,6 +8,8 @@ The dataset used for training and validation comes from the Cancer Imaging Archi
 
 Some python code for visualization and data preparation can also be found at the above link.
 
+![tumor pred](tumor_prediction.png "Tumor Detection")
+
 
 ## Modal FastAPI Deployment
 
