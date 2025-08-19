@@ -1,7 +1,7 @@
 # flake8: noqa
 
 VOLUME_NAME = "lung-cancer-detector"
-REMOTE_WEIGHT_PATH = "/model/model/best.pt"
+REMOTE_WEIGHT_PATH = "/model/best.pt"
 
 DESCRIPTION = """
 An API which uses a YOLOv5 object detection model to detect tumors in lung CT/PET scans.

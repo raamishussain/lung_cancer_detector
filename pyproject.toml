@@ -14,6 +14,7 @@ dependencies = [
     "setuptools<80.9", # pin to avoid pkg_resources deprecation
     "pydicom",
     "python-dotenv",
+    "python-multipart",
     "ultralytics",
     "uvicorn"
 ]
