@@ -1,0 +1,11 @@
+# Ignore everything except these files
+**
+
+!app/
+!app/__init__.py
+!app/app.py
+!app/config.py
+!app/inference.py
+!pyproject.toml
+!uv.lock
+!requirements.txt

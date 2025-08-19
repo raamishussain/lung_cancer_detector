@@ -1,0 +1,20 @@
+[project]
+name = "lung-cancer-detector"
+version = "0.1.0"
+description = "Lung Cancer Detector: Detecting tumors in chest CT/PET scans"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "modal",
+    "numpy==1.26.4",
+    "Pillow",
+    "torch==2.2.2",
+    "seaborn",
+    "setuptools<80.9", # pin to avoid pkg_resources deprecation
+    "pydicom",
+    "python-dotenv",
+    "python-multipart",
+    "ultralytics",
+    "uvicorn"
+]
